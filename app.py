@@ -6,7 +6,6 @@ from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras import layers, models
 import os
 
-# Page configuration
 st.set_page_config(
     page_title="Waste Classification System",
     page_icon="♻️",
@@ -14,7 +13,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for better UI
 st.markdown("""
     <style>
     .main {
@@ -109,7 +107,7 @@ def load_model():
         "Deployment/models/model_complete_20251102_012518.h5",
         "models/model_complete_20251102_012518.h5",
         "model_complete_20251102_012518.h5",
-        "Deployment/weights/model.weights.h5",  # Added your weights path
+        "Deployment/weights/model.weights.h5",  
         "weights/model.weights.h5"
     ]
     
@@ -123,7 +121,6 @@ def load_model():
                 st.warning(f"⚠️ Failed to load complete model from {model_path}: {str(e)}")
                 continue
     
-    # If no model file found, try loading weights with complex architecture
     weights_path = "Deployment/weights/model.weights.h5"
     if os.path.exists(weights_path):
         try:
@@ -185,14 +182,13 @@ def get_recycling_info(waste_type):
         'icon': '❓'
     })
 
-# Initialize session state for model
 if 'model' not in st.session_state:
     with st.spinner('Loading waste classification model...'):
         st.session_state.model = load_model()
 
 labels = gen_labels()
 
-# Header Section
+
 st.markdown("""
     <div class="header-section">
         <h1>♻️ Waste Classification System</h1>
@@ -200,7 +196,6 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# Main content area
 col1, col2 = st.columns([1, 1])
 
 with col1:
@@ -210,16 +205,13 @@ with col1:
                            help="Supported formats: JPG, PNG, JPEG, BMP")
     
     if file is not None:
-        # Display the uploaded image
         image = Image.open(file)
-        st.image(image, caption='Uploaded Image', use_container_width=True)  # FIXED: Changed use_column_width to use_container_width
-        
+        st.image(image, caption='Uploaded Image', use_container_width=True)         
         if st.button('🔍 Classify Waste', type='primary'):
             with st.spinner('Analyzing image...'):
-                # Preprocess the image
+
                 processed_image = preprocess_image(image)
-                
-                # Make prediction
+
                 if st.session_state.model is not None:
                     try:
                         prediction = st.session_state.model.predict(processed_image, verbose=0)
@@ -231,7 +223,6 @@ with col1:
                 
                 predicted_class = labels[np.argmax(prediction[0])]
                 
-                # Store results in session state
                 st.session_state.prediction = prediction
                 st.session_state.predicted_class = predicted_class
 
@@ -239,7 +230,6 @@ with col2:
     if 'prediction' in st.session_state:
         st.subheader("🎯 Classification Result")
         
-        # Main result box
         info = get_recycling_info(st.session_state.predicted_class)
         
         st.markdown(f"""
@@ -252,7 +242,6 @@ with col2:
             </div>
             """, unsafe_allow_html=True)
         
-        # Recycling instructions
         st.subheader("♻️ Recycling Instructions")
         st.markdown(f"""
             <div class="recycling-tip">
@@ -266,7 +255,6 @@ with col2:
             for tip in info['tips']:
                 st.markdown(f"- {tip}")
 
-# Footer
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666;'>"
@@ -275,7 +263,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Demo notice if no model loaded
 if st.session_state.model is None:
     st.warning(
         "⚠️ **Demonstration Mode**: Using sample predictions. "

@@ -26,7 +26,6 @@ def analyze_dataset(generator, generator_name):
     return class_counts, class_names
 
 def plot_training_history(history, save_path='training_history.png'):
-    # Plot training & validation accuracy
     plt.figure(figsize=(15, 5))
     
     plt.subplot(1, 3, 1)
@@ -38,7 +37,6 @@ def plot_training_history(history, save_path='training_history.png'):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.grid(True)
     
-    # Plot training & validation loss
     plt.subplot(1, 3, 2)
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -48,7 +46,6 @@ def plot_training_history(history, save_path='training_history.png'):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.grid(True)
     
-    # Plot learning rate
     if 'lr' in history.history:
         plt.subplot(1, 3, 3)
         plt.plot(history.history['lr'])
@@ -73,7 +70,6 @@ def get_latest_checkpoint():
     if not weight_files:
         return None
     
-    # Extract timestamps and find the latest one
     latest_file = max(weight_files, key=os.path.getmtime)
     return latest_file
 
@@ -84,14 +80,12 @@ def get_initial_epoch():
         return 0
     
     try:
-        # Try to extract epoch number from filename if it exists
         epoch = int(re.search(r'epoch_(\d+)', latest_checkpoint).group(1))
         return epoch
     except (AttributeError, ValueError):
         return 0
 
 def main():
-    # Set memory growth for GPU
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
@@ -101,36 +95,28 @@ def main():
         except RuntimeError as e:
             print(f"GPU memory growth error: {e}")
 
-    # Set paths
     train_dir = "Data/Train"
     test_dir = "Data/Test"
     
-    # Create weights directory if it doesn't exist
     os.makedirs("Deployment/weights", exist_ok=True)
     os.makedirs("Deployment/models", exist_ok=True)
     
-    # Create data generators with smaller batch size
     print("Creating data generators...")
     train_generator, validation_generator, test_generator = create_data_generators(
-        train_dir, test_dir, batch_size=12  # Reduced batch size for stability
+        train_dir, test_dir, batch_size=12  
     )
-    
-    # Analyze datasets
+
     train_counts, class_names = analyze_dataset(train_generator, "Training")
     val_counts, _ = analyze_dataset(validation_generator, "Validation")
     test_counts, _ = analyze_dataset(test_generator, "Test")
     
-    # Create timestamp for this training run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    # Create and compile model
     print("\nCreating model...")
     model = create_model(num_classes=len(train_generator.class_indices))
     
-    # Print model summary
     model.summary()
     
-    # Get the latest checkpoint and initial epoch
     latest_checkpoint = get_latest_checkpoint()
     initial_epoch = get_initial_epoch()
     
@@ -148,7 +134,6 @@ def main():
         print("No checkpoint found. Starting training from scratch...")
         initial_epoch = 0
     
-    # Define enhanced callbacks - FIXED: Use .weights.h5 extension
     checkpoint_cb = tf.keras.callbacks.ModelCheckpoint(
         filepath=f"Deployment/weights/model_{timestamp}_epoch_{{epoch:03d}}.weights.h5",
         save_weights_only=True,
@@ -184,64 +169,53 @@ def main():
         verbose=1
     )
     
-    # Train the model
     print("\n=== Starting Initial Training ===")
     wait_if_paused()
     history = train_model(
         model, 
         train_generator, 
         validation_generator,
-        epochs=100,  # Increased epochs
+        epochs=100,  
         initial_epoch=initial_epoch,
         callbacks=[checkpoint_cb, best_model_cb, lr_scheduler, early_stopping]
     )
     
-    # Plot training history
     plot_training_history(history, f'training_history_{timestamp}.png')
     
-    # Fine-tune the model
     print("\n=== Starting Fine-Tuning ===")
     wait_if_paused()
     fine_tune_history = fine_tune_model(
         model, 
         train_generator, 
         validation_generator,
-        epochs=50,  # Increased fine-tuning epochs
+        epochs=50, 
         callbacks=[checkpoint_cb, best_model_cb, lr_scheduler, early_stopping]
     )
     
-    # Plot fine-tuning history
     plot_training_history(fine_tune_history, f'fine_tuning_history_{timestamp}.png')
     
-    # Save the complete model for OpenCV
     print("\nSaving complete model for OpenCV...")
     model.save(f"Deployment/models/model_complete_{timestamp}.h5")
     
-    # Save the final weights - FIXED: Use .weights.h5 extension
     model.save_weights(f"Deployment/weights/model_final_{timestamp}.weights.h5")
     
-    # Evaluate on test set
     print("\n=== Final Evaluation on Test Set ===")
     test_loss, test_accuracy = model.evaluate(test_generator, verbose=1)
     print(f"Test accuracy: {test_accuracy:.4f} ({test_accuracy:.2%})")
     print(f"Test loss: {test_loss:.4f}")
     
-    # Detailed classification report
     from sklearn.metrics import classification_report, confusion_matrix
     import seaborn as sns
     
-    # Get predictions
     test_generator.reset()
     predictions = model.predict(test_generator, verbose=1)
     predicted_classes = np.argmax(predictions, axis=1)
     true_classes = test_generator.classes
     
-    # Classification report
     print("\n=== Detailed Classification Report ===")
     print(classification_report(true_classes, predicted_classes, 
                               target_names=class_names, digits=4))
     
-    # Confusion matrix
     plt.figure(figsize=(10, 8))
     cm = confusion_matrix(true_classes, predicted_classes)
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
@@ -253,7 +227,6 @@ def main():
     plt.savefig(f'confusion_matrix_{timestamp}.png', dpi=300, bbox_inches='tight')
     plt.close()
     
-    # Save evaluation results
     with open(f'evaluation_results_{timestamp}.txt', 'w') as f:
         f.write(f"Test accuracy: {test_accuracy:.4f} ({test_accuracy:.2%})\n")
         f.write(f"Test loss: {test_loss:.4f}\n")
