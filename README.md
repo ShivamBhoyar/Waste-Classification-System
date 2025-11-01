@@ -58,7 +58,7 @@ project/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/waste-classification.git
+git clone https://github.com/ShivamBhoyar/Waste-Classification-System
 cd waste-classification
 ```
 
