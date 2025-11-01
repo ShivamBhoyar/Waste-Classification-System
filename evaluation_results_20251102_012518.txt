@@ -1,0 +1,11 @@
+Test accuracy: 0.7784 (77.84%)
+Test loss: 1.0028
+Total epochs trained: 95
+
+Class Distribution:
+cardboard: 300 samples
+glass: 354 samples
+metal: 306 samples
+paper: 429 samples
+plastic: 361 samples
+trash: 109 samples
